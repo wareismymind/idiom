@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Idiom
 {
@@ -28,12 +29,42 @@ namespace Idiom
 
         public override void Initialize(AnalysisContext context)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
             context.EnableConcurrentExecution();
 
             // TODO: Consider registering other actions that act on syntax instead of or in addition to symbols
             // See https://github.com/dotnet/roslyn/blob/master/docs/analyzers/Analyzer%20Actions%20Semantics.md for more information
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.NamedType);
+
+            context.RegisterSyntaxTreeAction(DoTheThing);
+            context.RegisterSyntaxNodeAction(DoTheOtherThing, SyntaxKind.IdentifierToken, SyntaxKind.IdentifierName, SyntaxKind.QualifiedName);
+            
+            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.NamedType, SymbolKind.TypeParameter);
+        }
+
+        private void DoTheThing(SyntaxTreeAnalysisContext context)
+        {
+            var stuff = context.Tree.GetRoot().ChildNodesAndTokens().ToList();
+            var x = 0;
+            while (x < stuff.Count)
+            {
+                var current = stuff[x];
+                current.ChildNodesAndTokens();
+                stuff.AddRange(current.ChildNodesAndTokens());
+                x++;
+            }
+
+            int i = 0;
+        }
+
+        private void DoTheOtherThing(SyntaxNodeAnalysisContext context)
+        {
+            if (context.Node is QualifiedNameSyntax qn)
+            {
+
+            }
+
+            var wat = 0;
+
         }
 
         private static void AnalyzeSymbol(SymbolAnalysisContext context)

@@ -1,4 +1,6 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VerifyCS = Idiom.Test.CSharpCodeFixVerifier<
     Idiom.IdiomAnalyzer,
@@ -17,6 +19,32 @@ namespace Idiom.Test
 
             await VerifyCS.VerifyAnalyzerAsync(test);
         }
+
+        [TestMethod]
+        public async Task ValidateThisPOSWork()
+        {
+                var test = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Diagnostics;
+
+    namespace ConsoleApplication1
+    {
+        class TYPENAME
+        {   
+            public void DoTheThing()
+            {
+                System.Console.WriteLine(""Stuff"")
+            }
+        }
+    }";
+                var expected = VerifyCS.Diagnostic("Idiom").WithLocation(0).WithArguments("System.");
+                await VerifyCS.VerifyAnalyzerAsync(test, new DiagnosticResult(IdiomAnalyzer.DiagnosticId, DiagnosticSeverity.Warning));
+
+            }
 
         //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
