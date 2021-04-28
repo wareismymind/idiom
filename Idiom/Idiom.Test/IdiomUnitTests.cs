@@ -9,17 +9,70 @@ namespace Idiom.Test
     [TestClass]
     public class IdiomUnitTest
     {
-        //No diagnostics expected to show up
         [TestMethod]
-        public async Task TestMethod1()
+        public async Task Empty_NoDiagnostics()
         {
             var test = @"";
+            await VerifyCS.VerifyAnalyzerAsync(test);
+        }
+
+        [TestMethod]
+        public async Task NoQualifiedNames_NoDiagnostics()
+        {
+            var test = @"
+                using System;
+                namespace App
+                {
+                    static class Program
+                    {
+                        static void Main(string[] args)
+                        {
+                            Console.WriteLine(""hello, world"");
+                        }
+                    }
+                }";
 
             await VerifyCS.VerifyAnalyzerAsync(test);
         }
 
-        //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
+        public async Task QualifiedNames_RaisesDiagnostics()
+        {
+            var test = @"
+                using System;
+                namespace Foo.Bar
+                {
+                    public class Baz
+                    {
+                        public class Hello
+                        {
+                            public static void World()
+                            {
+                                Console.WriteLine(""hello, world"");
+                            }
+                        }
+                    }
+                }
+                namespace App
+                {
+                    static class Program
+                    {
+                        static void Main(string[] args)
+                        {
+                            {|#0:Foo.Bar.Baz|}.Hello.World();
+                        }
+                    }
+                }";
+
+            var expected = VerifyCS.Diagnostic(IdiomAnalyzer.DiagnosticId)
+                .WithLocation(0)
+                .WithArguments("Foo.Bar.Baz");
+
+            await VerifyCS.VerifyAnalyzerAsync(test, expected);
+        }
+
+        //Diagnostic and CodeFix both triggered and checked for
+        // [TestMethod]
         public async Task TestMethod2()
         {
             var test = @"
